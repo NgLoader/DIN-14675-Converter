@@ -14,7 +14,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set BUILD_VERSION
+      - name: Set RELEASE_VERSION
         run: echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
       - name: Set up JDK 21
@@ -25,15 +25,15 @@ jobs:
           cache: 'maven'
 
       - name: Build with Maven
-        run: mvn clean package -Drevision=$BUILD_VERSION
+        run: mvn clean package -Drevision=$RELEASE_VERSION
 
       - name: Create GitHub Release
         id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ env.BUILD_VERSION }}
-          name: Release v${{ env.BUILD_VERSION }}
+          tag_name: v${{ env.RELEASE_VERSION }}
+          name: Release v${{ env.RELEASE_VERSION }}
           generate_release_notes: true
           draft: false
           prerelease: false
-          files: target/BMA-Exporter-${{ env.BUILD_VERSION }}.jar
+          files: target/BMA-Exporter-${{ env.RELEASE_VERSION }}.jar
