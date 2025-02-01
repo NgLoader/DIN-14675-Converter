@@ -17,22 +17,55 @@ import org.apache.pdfbox.text.TextPosition;
 
 public class BMAExporter extends PDFTextStripper {
 
-//	public static final String FILE_IMPORT_NAME = "./data/DIN14675_BMA.pdf";
-//	public static final String FILE_EXPORT_NAME = "./data/export_BMA.json";
-//	public static final String FILE_PAGE_PREFIX = "ARGE DIN 14675 + DIN EN 16763 - Prüfungsfragenkatalog BMA";
-
-	public static final String FILE_IMPORT_NAME = "./data/DIN14675_SAA.pdf";
-	public static final String FILE_EXPORT_NAME = "./data/export_SAA.json";
-	public static final String FILE_PAGE_PREFIX = "ARGE DIN 14675 - Prüfungsfragenkatalog SAA";
+	public static String fileInportPath = null;
+	public static String fileExportPath = null;
 
 	public static void main(String[] args) throws IOException {
-		try (PDDocument document = PDDocument.load(Path.of(FILE_IMPORT_NAME).toFile())) {
+		for (int i = 0; i < args.length; i++) {
+			if (i + 1 >= args.length) {
+				System.out.println("Missing argument for: " + args[i]);
+				return;
+			}
+			
+			String argument = args[i];
+			String value = args[++i];
+			
+			switch (argument.toLowerCase()) {
+			case "--input":
+				fileInportPath = value;
+				continue;
+				
+			case "--output":
+				fileExportPath = value;
+				continue;
+				
+			default:
+				System.out.println("Unknown argument: " + argument);
+				return;
+			}
+		}
+
+		if (fileInportPath == null) {
+			System.out.println("Missing argument: --input <file>");
+			return;
+		} else if (fileExportPath == null) {
+			System.out.println("Missing argument: --output <file>");
+			return;
+		}
+
+		long startTimeInMs = System.currentTimeMillis();
+		try (PDDocument document = PDDocument.load(Path.of(fileInportPath).toFile())) {
 			BMAExporter exporter = new BMAExporter();
 			exporter.analyze(document);
-//			System.out.println("SIZE: " + exporter.getQuestions().size());
-//			System.out.println(exporter.getQuestions().get(12).toString());
-			System.out.println("SIZE: " + exporter.getCategories().size());
-			System.out.println(exporter.getCategories().get(0).toString());
+
+			int requiredTimeInMs = (int) (System.currentTimeMillis() - startTimeInMs);
+
+			System.out.println("Questions created: " + exporter.getQuestions().size());
+			System.out.println("Categories created: " + exporter.getCategories().size());
+			System.out.println("Completed in: " + requiredTimeInMs + "ms");
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Something went wrong.");
 		}
 	}
 
@@ -52,6 +85,8 @@ public class BMAExporter extends PDFTextStripper {
 
 	private BMACategory.Builder categoryBuilder;
 	private boolean checkIfNextCategory = false;
+
+	private String filePagePrefix = null;
 
 	public BMAExporter() throws IOException {
 		super();
@@ -87,7 +122,12 @@ public class BMAExporter extends PDFTextStripper {
 
 	@Override
 	protected void writeString(String line, List<TextPosition> textPositions) throws IOException {
-		if (line.equals(FILE_PAGE_PREFIX)) {
+		if (filePagePrefix == null && line.matches("\\d{2}\\.\\d{2}\\.\\d{4}")) {
+			this.readNext.add(__ -> {}); // skip page count
+			this.readNext.add(pagePrefix -> this.filePagePrefix = pagePrefix);
+			this.checkIfNextCategory = true;
+			return;
+		} else if (line.equals(this.filePagePrefix)) {
 			this.checkIfNextCategory = true;
 			return;
 		}

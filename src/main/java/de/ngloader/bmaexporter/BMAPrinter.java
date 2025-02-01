@@ -39,7 +39,7 @@ public class BMAPrinter {
 					(seperator * 50) + 50)));
 		}
 
-		try (FileWriter fileWriter = new FileWriter(Path.of(BMAExporter.FILE_EXPORT_NAME).toFile())) {
+		try (FileWriter fileWriter = new FileWriter(Path.of(BMAExporter.fileExportPath).toFile())) {
 			fileWriter.write(list.toString());
 		} catch (IOException e) {
 			e.printStackTrace();
